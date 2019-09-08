@@ -3,7 +3,6 @@ extern crate serde;
 extern crate serde_json;
 use gif::SetParameter;
 use glola::prelude::*;
-use sixel::{encoder, Environment};
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io;
@@ -28,21 +27,9 @@ fn gif_loop(opt: Mapping) {
     // Read the file header
     let mut decoder = decoder.read_info().unwrap();
     // let environment = Environment::query().unwrap();
-    let mut settings = encoder::Settings::default();
-    settings.size((opt.cloumn as u32, opt.row as u32));
-    settings.center();
-    settings.fast();
-    settings.high();
-    let color = picto::palette::Rgba::new(0.2, 0.2, 0.2, 0.2);
-    let mut pbuff =
-        picto::buffer::Rgba::from_pixel(opt.cloumn as u32 + 1, opt.row as u32 + 1, &color);
     let n = opt.cloumn * opt.row;
     let mut cli = Client::new(opt, |buffer| {
-        // for i in 0..n {
-        // pbuff.
-        // }
-        // encoder::encode(&settings, &pbuff, io::stdout()).unwrap();
-        // println!();
+        println!("{}", buffer);
     })
     .unwrap();
     while let Some(frame) = decoder.read_next_frame().unwrap() {
@@ -56,8 +43,6 @@ fn gif_loop(opt: Mapping) {
                 buffer[idx] = RGBW::from(frame.buffer[idx] as u32);
             }
         }
-        encoder::encode(&settings, &pbuff, io::stdout()).unwrap();
-
         let packet = ScreenBuffer::from(buffer.as_ref());
         cli.apply_buffer(&packet);
     }

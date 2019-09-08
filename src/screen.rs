@@ -1,3 +1,4 @@
+use std::fmt;
 ///
 /// A RGBW buffer represented bt a  &[u32, WIDTH*HEIGHT]
 ///
@@ -10,10 +11,10 @@ pub struct ScreenBuffer<'a>(pub &'a [RGBW]);
 #[derive(Clone, Copy, Debug)]
 #[repr(packed)]
 pub struct RGBW {
-    red: u8,
-    green: u8,
-    blue: u8,
-    white: u8,
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
+    pub white: u8,
 }
 
 impl From<u32> for RGBW {

@@ -15,5 +15,5 @@ termion = "1.5.3"
 serde = "1.0"
 serde_json = "1.0"
 gif = "0.10.2"
-sixel = { git = "https://github.com/meh/rust-sixel" }
 picto = "0.4.3"
+hexdump = "0.1.0"

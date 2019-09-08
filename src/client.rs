@@ -2,16 +2,47 @@
 //! `OLA` client wrapper that can map `ScreenBuffer` into DXM packet/arnet univers
 //!
 use crate::prelude::{AddrMap, GError, Mapping, ScreenBuffer, RGBW};
+use std::fmt;
 
-pub struct DXMPacket {}
+pub struct DXMPacket(Vec<u8>);
 
 impl DXMPacket {
     #[inline(always)]
-    pub fn set_pixel(&self, idx: usize, pixel: RGBW) {}
+    pub fn set_pixel(&mut self, idx: usize, pixel: RGBW) {
+        self.0[idx * 4] = pixel.red;
+        self.0[(idx * 4) + 1] = pixel.green;
+        self.0[(idx * 4) + 2] = pixel.blue;
+        self.0[(idx * 4) + 3] = pixel.white;
+    }
+}
+
+impl fmt::Display for DXMPacket {
+    fn fmt(&self, fm: &mut fmt::Formatter) -> fmt::Result {
+        for line in hexdump::hexdump_iter(&self.0) {
+            writeln!(fm, "{}", line)?;
+        }
+        writeln!(fm)
+    }
 }
 
 pub struct ArtnetPacket {
     buffer: Vec<DXMPacket>,
+}
+
+impl fmt::Display for ArtnetPacket {
+    fn fmt(&self, fm: &mut fmt::Formatter) -> fmt::Result {
+        for (idx, univer) in self.buffer.iter().enumerate() {
+            write!(
+                fm,
+                "DXM{}, Univer: {}, Buff size: {}\n{}",
+                univer.0.len() / 4,
+                idx,
+                univer.0.len(),
+                univer
+            )?;
+        }
+        writeln!(fm)
+    }
 }
 
 ///
@@ -27,7 +58,15 @@ pub struct Client<F: (FnMut(&ArtnetPacket))> {
 impl ArtnetPacket {
     fn new(addr: &AddrMap) -> Self {
         Self {
-            buffer: (0..=addr.nbr_univer).map(|_| DXMPacket {}).collect(),
+            buffer: (0..=addr.nbr_univer)
+                .map(|_| {
+                    let sz = addr.univer_size * 4;
+                    let mut buf = Vec::with_capacity(sz);
+                    unsafe { buf.set_len(sz) };
+                    buf.iter_mut().for_each(|e| *e = 0);
+                    DXMPacket(buf)
+                })
+                .collect(),
         }
     }
 
