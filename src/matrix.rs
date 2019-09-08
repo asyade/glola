@@ -1,4 +1,4 @@
-use crate::options::{LedOredering, Mapping};
+use crate::options::{LedOrdering, Mapping};
 use std::fmt;
 use termion::color;
 
@@ -15,6 +15,8 @@ pub struct LedAddr {
 pub struct AddrMap {
     pub width: usize,
     pub height: usize,
+    pub nbr_univer: usize,
+    pub univer_size: usize,
     pub addr: Vec<Vec<LedAddr>>,
 }
 
@@ -47,20 +49,20 @@ impl fmt::Display for AddrMap {
 
 impl AddrMap {
     pub fn from_mapping(map: &Mapping) -> Self {
-        // Get nbr of unusable led, assuming each led strip/line start from the bottom and each line can be made of only one univer @kantum ?
-        let led_leak = map.dxm_size % map.line;
+        // Get nbr of unusable led, assuming each led strip/row start from the bottom and each row can be made of only one univer @kantum ?
+        let led_leak = map.dmx_size % map.row;
         // Get nbr of cloum per univers/dxm packet, taking in consideration the led leak
-        let cloumn_per_univer = (map.dxm_size - led_leak) / map.line;
+        let cloumn_per_univer = (map.dmx_size - led_leak) / map.row;
         let mut map_addr: Vec<Vec<LedAddr>> = Vec::with_capacity(map.cloumn);
         // Iterate on every cloumn,
         for x in 0..map.cloumn {
             // Get the univer of the current cloumn
             let univer = x / cloumn_per_univer;
             // Get the address of the first led of the current cloumn
-            let begin_addr = (x % cloumn_per_univer) * map.line;
-            // push every (univer, address) tuple, dont care about LedOredering we're going to map the result at the end of the loop
+            let begin_addr = (x % cloumn_per_univer) * map.row;
+            // push every (univer, address) tuple, dont care about LedOrdering we're going to map the result at the end of the loop
             map_addr.push(
-                (0..map.line)
+                (0..map.row)
                     .map(|e| LedAddr::from((univer, e + begin_addr)))
                     .collect(),
             );
@@ -69,11 +71,14 @@ impl AddrMap {
     }
 
     fn from_unordered_matrix(map: Vec<Vec<LedAddr>>, opt: &Mapping) -> Self {
+        let nbr_univer: usize = map.last().unwrap().last().unwrap().univer;
         // If the led ordering is NextCloumnFromBottom that mens we should revers 1/2 cloumn assuming the first led strip start from top
         AddrMap {
+            univer_size: opt.dmx_size,
+            nbr_univer,
             width: opt.cloumn,
-            height: opt.line,
-            addr: (if opt.ordering == LedOredering::NextCloumnFromBottom {
+            height: opt.row,
+            addr: (if opt.ordering == LedOrdering::NextCloumnFromBottom {
                 map.into_iter()
                     .enumerate()
                     .map(|(index, cloumn)| {
@@ -109,8 +114,8 @@ mod tests {
         let map = AddrMap::from_mapping(&opt);
         eprintln!("{} ", map);
         map.addr.iter().for_each(|e| {
-            assert_eq!(e.len(), opt.line);
-            assert!(e.len() < opt.dxm_size);
+            assert_eq!(e.len(), opt.row);
+            assert!(e.len() < opt.dmx_size);
         });
         assert_eq!(map.addr.len(), opt.cloumn);
     }
@@ -118,20 +123,20 @@ mod tests {
     #[test]
     fn test_cloum_from_top() {
         basic(Mapping {
-            ordering: LedOredering::NextCloumnFromTop,
-            dxm_size: 512,
+            ordering: LedOrdering::NextCloumnFromTop,
+            dmx_size: 512,
             cloumn: 50,
-            line: 50,
+            row: 50,
         });
     }
 
     #[test]
     fn test_cloum_from_bottom() {
         basic(Mapping {
-            ordering: LedOredering::NextCloumnFromBottom,
-            dxm_size: 512,
+            ordering: LedOrdering::NextCloumnFromBottom,
+            dmx_size: 512,
             cloumn: 50,
-            line: 50,
+            row: 50,
         });
     }
 }

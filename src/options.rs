@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// Used to determinate addressing of leds
 ///
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Serialize, Deserialize)]
-pub enum LedOredering {
+pub enum LedOrdering {
     ///
     /// Assume led addressing as follow
     ///  +-+  +-+  +-+
@@ -44,11 +44,11 @@ pub enum LedOredering {
 ///
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Mapping {
-    pub ordering: LedOredering,
+    pub ordering: LedOrdering,
     /// ex: 512
-    pub dxm_size: usize,
+    pub dmx_size: usize,
     // Number of cloumn
     pub cloumn: usize,
-    // Number of line per cloumn
-    pub line: usize,
+    // Number of row per cloumn
+    pub row: usize,
 }

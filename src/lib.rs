@@ -10,7 +10,9 @@ extern crate termion;
 pub mod client;
 pub mod matrix;
 pub mod options;
+pub mod prelude;
 pub mod screen;
+extern crate sixel;
 
 ///
 /// Library error (returned by all public method)
