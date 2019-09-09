@@ -9,5 +9,27 @@ Imagine that you got very huge led matrix *ex: 400\*400* that is controlled usin
 # Wrapper
 `GLOLA` is made from native code and his API is quite simple so you can use it in most programming languages but some wrapper are already made for NodeJS, C/C++ and RUST
 
-# Usage
-* wip
+# Examples
+## CLI
+The `cli` example is a simple command line tool that use the library.
+to work propely the cli must be configured using environment variable `CONFIG` that point to a json configuration file.
+Here is an example config (you can get it from `cargo run --example cli -- default-cfg`)
+### Generate config
+```json
+{
+  "ordering": "NextCloumnFromBottom", // Can be NextCloumnFromBottom or NextCloumnFromTop see glola::Matrix
+  "dmx_size": 512,
+  "cloumn": 10,
+  "row": 10
+}
+
+```
+### Show address map
+Once your environment is set you can run the following command to verify your led addressing
+```bash
+cargo run --example cli -- dump-addr
+```
+### Decode GIF
+```bash
+cargo run --example cli -- gif-loop [GIF FILE PATH]
+```
