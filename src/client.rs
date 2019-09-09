@@ -21,7 +21,7 @@ impl fmt::Display for DXMPacket {
         for line in hexdump::hexdump_iter(&self.0) {
             writeln!(fm, "{}", line)?;
         }
-        writeln!(fm)
+        Ok(())
     }
 }
 
@@ -41,7 +41,7 @@ impl fmt::Display for ArtnetPacket {
                 univer
             )?;
         }
-        writeln!(fm)
+        writeln!(fm, "\n -- \n")
     }
 }
 
