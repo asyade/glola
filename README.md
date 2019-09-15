@@ -17,9 +17,9 @@ Here is an example config (you can get it from `cargo run --example cli -- defau
 ### Generate config
 ```json
 {
-  "ordering": "NextCloumnFromBottom", // Can be NextCloumnFromBottom or NextCloumnFromTop see glola::Matrix
+  "ordering": "NextcolumnFromBottom", // Can be NextcolumnFromBottom or NextcolumnFromTop see glola::Matrix
   "dmx_size": 512,
-  "cloumn": 10,
+  "column": 10,
   "row": 10
 }
 

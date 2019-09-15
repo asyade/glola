@@ -1,7 +1,7 @@
 //!
 //! `OLA` client wrapper that can map `ScreenBuffer` into DXM packet/arnet univers
 //!
-use crate::prelude::{AddrMap, GError, Mapping, ScreenBuffer, RGBW};
+use crate::prelude::{AddrMap, GError, MappingOpt, ScreenBuffer, RGBW};
 use std::fmt;
 
 pub struct DXMPacket(Vec<u8>);
@@ -75,7 +75,7 @@ impl ArtnetPacket {
         for (index, pixel) in buffer.0.iter().enumerate() {
             // Get row from buffer index
             let y = index / addr.width;
-            // Get cloumn from buffer index
+            // Get column from buffer index
             let x = index - (y * addr.width);
             // Get led address (tuple of (univer, address)) from address map
             let addr = addr[(x, y)];
@@ -87,10 +87,10 @@ impl ArtnetPacket {
 }
 
 impl<F: (FnMut(&ArtnetPacket))> Client<F> {
-    pub fn new(map: Mapping, process_hook: F) -> Result<Self, GError> {
+    pub fn new(map: MappingOpt, process_hook: F) -> Result<Self, GError> {
         if map.row > map.dmx_size {
             return Err(GError::WrongConfig(
-                "Mapping::row must be smaller than Mapping::dmx_size",
+                "MappingOpt::row must be smaller than MappingOpt::dmx_size",
             ));
         }
         // Return a new client instance and generate led addresses mapping

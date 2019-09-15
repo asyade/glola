@@ -25,7 +25,7 @@ pub enum LedOrdering {
     ///  |4|  |5|
     ///  +-+  +-+
     ///
-    NextCloumnFromBottom,
+    NextcolumnFromBottom,
     ///
     /// Assume led addressing as follow
     ///
@@ -42,20 +42,20 @@ pub enum LedOrdering {
     /// |4|  |8|
     /// +-+  +-+
     ///
-    NextCloumnFromTop,
+    NextcolumnFromTop,
 }
 
 ///
 /// Represente how the led matrix/mapping shoulde be constructed
 ///
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Mapping {
+pub struct MappingOpt {
     pub ordering: LedOrdering,
     /// ex: 512
     pub dmx_size: usize,
-    // Number of cloumn
-    pub cloumn: usize,
-    // Number of row per cloumn
+    // Number of column
+    pub column: usize,
+    // Number of row per column
     pub row: usize,
     // Height of individual chunk/univers)  width is determinated b dmx_size
     pub univer_height: usize,

@@ -15,8 +15,8 @@ fn usage() {
     println!("    gifloop [GIF FILE] - parse the given GIF file and print it to OLA");
 }
 
-fn gif_loop(opt: Mapping) {
-    let buff_size = opt.row * opt.cloumn;
+fn gif_loop(opt: MappingOpt) {
+    let buff_size = opt.row * opt.column;
     let mut buffer: Vec<RGBW> = (0..buff_size).map(|_| RGBW::from(0)).collect();
     let mut decoder = gif::Decoder::new(
         File::open(std::env::args().nth(2).expect("No gif file provided"))
@@ -27,7 +27,7 @@ fn gif_loop(opt: Mapping) {
     // Read the file header
     let mut decoder = decoder.read_info().unwrap();
     // let environment = Environment::query().unwrap();
-    let n = opt.cloumn * opt.row;
+    let n = opt.column * opt.row;
     let mut cli = Client::new(opt, |buffer| {
         println!("{}", buffer);
     })
@@ -48,19 +48,19 @@ fn gif_loop(opt: Mapping) {
     }
 }
 
-fn dump_addr(opt: Mapping) {
+fn dump_addr(opt: MappingOpt) {
     let addr = AddrMap::from_mapping(&opt);
     println!("{}", addr);
 }
 
 fn default_cfg() {
-    let map = Mapping {
+    let map = MappingOpt {
         channel_per_pixel: 4,
-        cloumn: 10,
+        column: 10,
         row: 10,
         dmx_size: 10,
         univer_height: 10,
-        ordering: LedOrdering::NextCloumnFromTop,
+        ordering: LedOrdering::NextcolumnFromTop,
     };
     println!("{}", serde_json::to_string_pretty(&map).unwrap());
 }
@@ -71,7 +71,7 @@ fn main() -> io::Result<()> {
             return Ok(default_cfg());
         }
         let mut config = std::env::var("CONFIG").expect("Please set the CONFIG environement variable, for an example config run `cli default-cfg`");
-        let cfg: Mapping = serde_json::from_reader(
+        let cfg: MappingOpt = serde_json::from_reader(
             std::fs::OpenOptions::new()
                 .read(true)
                 .open(config)

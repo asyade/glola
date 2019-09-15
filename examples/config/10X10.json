@@ -1,7 +1,7 @@
 {
-    "ordering": "NextCloumnFromTop",
+    "ordering": "NextcolumnFromTop",
     "dmx_size": 400,
-    "cloumn": 20,
+    "column": 20,
     "row": 20,
     "univer_height": 10,
     "channel_per_pixel": 4
