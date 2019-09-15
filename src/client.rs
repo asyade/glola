@@ -9,10 +9,11 @@ pub struct DXMPacket(Vec<u8>);
 impl DXMPacket {
     #[inline(always)]
     pub fn set_pixel(&mut self, idx: usize, pixel: RGBW) {
-        self.0[idx * 4] = pixel.red;
-        self.0[(idx * 4) + 1] = pixel.green;
-        self.0[(idx * 4) + 2] = pixel.blue;
-        self.0[(idx * 4) + 3] = pixel.white;
+        let idx = idx * 4;
+        self.0[idx] = pixel.red;
+        self.0[idx + 1] = pixel.green;
+        self.0[idx * 4] = pixel.blue;
+        self.0[idx * 4] = pixel.white;
     }
 }
 

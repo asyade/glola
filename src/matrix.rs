@@ -5,8 +5,8 @@ use termion::color;
 ///
 /// [univer, address]
 ///
-#[derive(Debug, From, Into, Clone, Copy)]
-pub struct LedAddr {
+#[derive(Debug, From, Into, Clone, Copy, Constructor)]
+pub struct PixelAddr {
     pub univer: usize,
     pub address: usize,
 }
@@ -17,29 +17,27 @@ pub struct AddrMap {
     pub height: usize,
     pub nbr_univer: usize,
     pub univer_size: usize,
-    pub addr: Vec<Vec<LedAddr>>,
+    pub addr: Vec<Vec<PixelAddr>>,
 }
 
 impl std::ops::Index<(usize, usize)> for AddrMap {
-    type Output = LedAddr;
-    fn index(&self, index: (usize, usize)) -> &LedAddr {
+    type Output = PixelAddr;
+    fn index(&self, index: (usize, usize)) -> &PixelAddr {
         &self.addr[index.0][index.1]
     }
 }
 
 impl fmt::Display for AddrMap {
     fn fmt(&self, wr: &mut fmt::Formatter) -> fmt::Result {
-        let mut curr_univer = 9999;
         for y in 0..self.addr[0].len() {
             for x in self.addr.iter() {
-                if x[y].univer != curr_univer {
-                    curr_univer = x[y].univer;
-                }
-                if curr_univer % 2 == 0 {
-                    write!(wr, "{}{:03} ", color::Fg(color::Blue), x[y].address)?;
-                } else {
-                    write!(wr, "{}{:03} ", color::Fg(color::Green), x[y].address)?;
-                }
+                match x[y].univer % 3 {
+                    0 => write!(wr, "{}{:03} ",  color::Fg(color::Blue), x[y].address),
+                    1 => write!(wr, "{}{:03} ", color::Fg(color::Red), x[y].address),
+                    2 => write!(wr, "{}{:03} ", color::Fg(color::Green), x[y].address),
+                    3 => write!(wr, "{}{:03} ", color::Fg(color::Yellow), x[y].address),
+                    _ => write!(wr, "{}{:03} ", color::Fg(color::White), x[y].address),
+                };
             }
             writeln!(wr)?;
         }
@@ -49,28 +47,55 @@ impl fmt::Display for AddrMap {
 
 impl AddrMap {
     pub fn from_mapping(map: &Mapping) -> Self {
-        // Get nbr of unusable led, assuming each led strip/row start from the bottom and each row can be made of only one univer @kantum ?
-        let led_leak = map.dmx_size % map.row;
-        // Get nbr of cloum per univers/dxm packet, taking in consideration the led leak
-        let cloumn_per_univer = (map.dmx_size - led_leak) / map.row;
-        let mut map_addr: Vec<Vec<LedAddr>> = Vec::with_capacity(map.cloumn);
-        // Iterate on every cloumn,
-        for x in 0..map.cloumn {
-            // Get the univer of the current cloumn
-            let univer = x / cloumn_per_univer;
-            // Get the address of the first led of the current cloumn
-            let begin_addr = (x % cloumn_per_univer) * map.row;
-            // push every (univer, address) tuple, dont care about LedOrdering we're going to map the result at the end of the loop
-            map_addr.push(
-                (0..map.row)
-                    .map(|e| LedAddr::from((univer, e + begin_addr)))
-                    .collect(),
-            );
+        if map.dmx_size < map.univer_height {
+            panic!("Univer height must be lesser or equal to dmx buffer size");
         }
-        Self::from_unordered_matrix(map_addr, map)
+        let nbr_led_per_channel = map.dmx_size / 4;
+        let led_leak = nbr_led_per_channel % map.univer_height;
+        println!("Warning : chunk height is not well setup, {} led are unusable", led_leak);
+        // How many cloumn can be handled per univer
+        let nbr_cloumn_per_univer = nbr_led_per_channel / map.univer_height;
+        // How many univers are superposed
+        let nbr_row_univer = map.row / map.univer_height;
+        let nbr_univer_per_line = map.cloumn / nbr_cloumn_per_univer;
+        if map.row % map.univer_height != 0 {
+            println!("Warning: univer height is not well steup, last univer height can't equal other univer height this can result of unedifned behaviour");
+        }
+        let mut maping: Vec<Vec<PixelAddr>> = (0..map.cloumn).map(|e| vec![]).collect();
+        // let mut univers: Vec<Vec<Vec<Vec<PixelAddr>>>> = (0..nbr_cloumn_univer).map(|_| (0..nbr_row_univer).map(|_| vec![]));
+        let mut rev_row = false;
+        let mut last_univer = 0;
+        for x in 0..map.cloumn {
+            let cloum_univer_idx = x / nbr_cloumn_per_univer;
+            dbg!(cloum_univer_idx);
+            for y in 0..map.row {
+                let row_univer_id = (y / map.univer_height);
+                let univer_offset = row_univer_id * nbr_univer_per_line;
+                let current_univer = (x / nbr_cloumn_per_univer) + univer_offset;
+                let y_offset_in_univer = y - (map.univer_height * row_univer_id);
+                let x_offset_in_univer = x - (nbr_cloumn_per_univer * cloum_univer_idx);
+                // TODO other motifs here
+                if ((x_offset_in_univer+1) % 2 == 0) {
+                    maping[x].push(PixelAddr::new(current_univer,((map.univer_height - 1) -  y_offset_in_univer) + (x_offset_in_univer * nbr_cloumn_per_univer)));
+                } else {
+                    maping[x].push(PixelAddr::new(current_univer, y_offset_in_univer + (x_offset_in_univer * nbr_cloumn_per_univer)));
+                }
+                maping[x][y].address *= map.channel_per_pixel;
+                // To here
+            }
+            // for i in 0..nbr_row_univer;
+        }
+
+        Self{
+            univer_size: map.dmx_size,
+            nbr_univer: nbr_row_univer * nbr_univer_per_line,
+            width: map.cloumn,
+            height: map.row,
+            addr: maping,
+        }
     }
 
-    fn from_unordered_matrix(map: Vec<Vec<LedAddr>>, opt: &Mapping) -> Self {
+    fn from_unordered_matrix(map: Vec<Vec<PixelAddr>>, opt: &Mapping) -> Self {
         let nbr_univer: usize = map.last().unwrap().last().unwrap().univer;
         // If the led ordering is NextCloumnFromBottom that mens we should revers 1/2 cloumn assuming the first led strip start from top
         AddrMap {

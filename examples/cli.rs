@@ -55,10 +55,12 @@ fn dump_addr(opt: Mapping) {
 
 fn default_cfg() {
     let map = Mapping {
+        channel_per_pixel: 4,
         cloumn: 10,
         row: 10,
-        dmx_size: 512,
-        ordering: LedOrdering::NextCloumnFromBottom,
+        dmx_size: 10,
+        univer_height: 10,
+        ordering: LedOrdering::NextCloumnFromTop,
     };
     println!("{}", serde_json::to_string_pretty(&map).unwrap());
 }

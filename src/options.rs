@@ -1,3 +1,9 @@
+//!
+//! User input data structures
+//! ```rust
+//! //! ```
+//! 
+
 use serde::{Deserialize, Serialize};
 ///
 /// Used to determinate addressing of leds
@@ -51,4 +57,8 @@ pub struct Mapping {
     pub cloumn: usize,
     // Number of row per cloumn
     pub row: usize,
+    // Height of individual chunk/univers)  width is determinated b dmx_size
+    pub univer_height: usize,
+    /// Nbr channel used by a single pixel
+    pub channel_per_pixel: usize,
 }
