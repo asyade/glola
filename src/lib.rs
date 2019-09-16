@@ -6,13 +6,15 @@ extern crate derive_more;
 extern crate static_assertions;
 #[macro_use]
 extern crate serde;
+extern crate fps_counter;
 extern crate termion;
-pub mod client;
+pub mod dmx;
+pub mod encoder;
 pub mod matrix;
 pub mod options;
 pub mod prelude;
 pub mod screen;
-
+use prelude::*;
 ///
 /// Library error (returned by all public method)
 ///
@@ -29,4 +31,11 @@ impl GError {
     fn into_raw_os_error() -> i32 {
         unimplemented!()
     }
+}
+
+pub fn init_arnet_screen(opt: MappingOpt) -> Screen<ArtnetEncoder> {
+    let opt: MappingOptExt = opt.into();
+    let map = AddrMap::from_mapping(opt.clone());
+    let encoder = ArtnetEncoder::new(opt.clone());
+    Screen::new(map, encoder)
 }

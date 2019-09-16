@@ -8,7 +8,24 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Read;
 
-fn gif_loop() {}
+fn gif_loop(gif: &str, opt: MappingOpt) {
+    let mut screen = glola::init_arnet_screen(opt.clone());
+    let opt: MappingOptExt = opt.into();
+    let mut decoder = gif::Decoder::new(File::open(gif).unwrap());
+    // Configure the decoder such that it will expand the image to RGBA.
+    decoder.set(gif::ColorOutput::RGBA);
+    // Read the file header
+    let mut decoder = decoder.read_info().unwrap();
+    let mut sized_frames: Vec<Vec<u8>> = vec![];
+    while let Some(frame) = decoder.read_next_frame().unwrap() {
+        sized_frames.push(frame.buffer[0..opt.width * opt.height].to_vec());
+    }
+    loop {
+        for frame in sized_frames.iter() {
+            dbg!("FPS: ", screen.apply(frame));
+        }
+    }
+}
 
 fn dump(opt: MappingOpt) {
     let opt: MappingOptExt = opt.into();
@@ -69,10 +86,10 @@ fn main() {
     if let Some(cmd) = matches.subcommand_matches("gif") {
         let config = config!(cmd.value_of("config").unwrap());
         let gif = cmd.value_of("gif").unwrap();
+        gif_loop(gif, config);
     } else if let Some(cmd) = matches.subcommand_matches("dump") {
         dump(config!(cmd.value_of("config").unwrap()));
     } else {
         error!("No subcommand provided !");
-        return;
     }
 }

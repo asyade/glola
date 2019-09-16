@@ -5,7 +5,7 @@ use termion::color;
 
 /// Made from a `Mapping` (two dimensional matrix of [x,y] -> dxm address/univer id)
 /// and options this struct contains all informations needed to convert image buffer to arnet buffer
-#[derive(Debug, From, Into)]
+#[derive(Debug, From, Into, Clone)]
 pub struct AddrMap {
     pub opt: MappingOptExt,
     pub addr: Mapping,
@@ -17,16 +17,17 @@ type Mapping = Vec<Vec<PixelAddr>>;
 /// Used as internal configuration this struct should be generated from
 #[derive(Debug, Clone)]
 pub struct MappingOptExt {
-    height: usize,
-    width: usize,
-    univer_width: usize,
-    univer_height: usize,
-    univer_per_column: usize,
-    univer_per_row: usize,
-    color_mode: ColorMode,
-    displacement: Displacement,
-    direction: Direction,
-    orientation: Orientation,
+    pub height: usize,
+    pub width: usize,
+    pub univer_width: usize,
+    pub univer_height: usize,
+    pub univer_per_column: usize,
+    pub univer_per_row: usize,
+    pub color_mode: ColorMode,
+    pub displacement: Displacement,
+    pub direction: Direction,
+    pub orientation: Orientation,
+    pub pixel_size: usize,
 }
 
 /// the PreMapping is a tree dimensional matrix of [univer, x in univer, y in univer]
@@ -156,6 +157,7 @@ impl PreMapping {
 
 impl Into<Mapping> for PreMapping {
     fn into(self) -> Mapping {
+        dbg!(&self);
         let mut mapping = vec![vec![PixelAddr::empty(); self.1.height]; self.1.width];
         for (uid, univer) in self.0.into_iter().enumerate() {
             let univer_y = uid / self.1.univer_per_column;
@@ -164,7 +166,11 @@ impl Into<Mapping> for PreMapping {
             let y_offset_in_matrix = univer_y * self.1.univer_height;
             for (x, x_item) in univer.into_iter().enumerate() {
                 for (y, y_item) in x_item.into_iter().enumerate() {
-                    mapping[x + x_offset_in_matrix][y + y_offset_in_matrix] = y_item;
+                    let x = x + x_offset_in_matrix;
+                    let y = y + y_offset_in_matrix;
+                    if x < self.1.width && y < self.1.height {
+                        mapping[x][y] = y_item;
+                    }
                 }
             }
         }
@@ -201,6 +207,7 @@ impl From<MappingOpt> for MappingOptExt {
             displacement: opt.displacement,
             direction: opt.direction,
             orientation: opt.orientation,
+            pixel_size: nbr_led_per_pixel,
         };
         se
     }

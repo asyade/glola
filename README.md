@@ -29,6 +29,11 @@ Here is an example config (you can get it from `cargo run --example cli -- defau
 }
 
 ```
+#### Available parametters
+
+- color_mode: `rgb`, `rgba`
+- orientation: `TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`
+
 ## CLI
 A simple CLI tool is provided with glola, its provide some feature like addressing debug or media transcoding.
 ```

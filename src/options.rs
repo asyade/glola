@@ -38,7 +38,7 @@ pub enum Direction {
 ///
 /// Represente how the led matrix/mapping shoulde be constructed
 ///
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MappingOpt {
     /// ex: 512
     pub dmx_size: usize,

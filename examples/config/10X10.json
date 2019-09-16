@@ -1,11 +1,11 @@
 {
-    "dmx_size": 400,
-    "width": 40,
-    "height": 40,
+    "dmx_size": 256,
+    "width": 20,
+    "height": 20,
     "univer_height": 10,
     "channel_per_pixel": 10,
-    "color_mode": "RGBA",
+    "color_mode": "RGB",
     "displacement": "Snake",
     "direction": "Horizontal",
-    "orientation": "BottomRight"
+    "orientation": "TopLeft"
 }
