@@ -58,29 +58,30 @@ pub struct Client<F: (FnMut(&ArtnetPacket))> {
 
 impl ArtnetPacket {
     fn new(addr: &AddrMap) -> Self {
-        Self {
-            buffer: (0..=addr.nbr_univer)
-                .map(|_| {
-                    let sz = addr.univer_size * 4;
-                    let mut buf = Vec::with_capacity(sz);
-                    unsafe { buf.set_len(sz) };
-                    buf.iter_mut().for_each(|e| *e = 0);
-                    DXMPacket(buf)
-                })
-                .collect(),
-        }
+        unimplemented!()
+        // Self {
+        // buffer: (0..=addr.nbr_univer)
+        // .map(|_| {
+        // let sz = addr.univer_size * 4;
+        // let mut buf = Vec::with_capacity(sz);
+        // unsafe { buf.set_len(sz) };
+        // buf.iter_mut().for_each(|e| *e = 0);
+        // DXMPacket(buf)
+        // })
+        // .collect(),
+        // }
     }
 
     fn apply_screen_buffer(&mut self, buffer: &ScreenBuffer, addr: &AddrMap) -> &mut Self {
         for (index, pixel) in buffer.0.iter().enumerate() {
-            // Get row from buffer index
-            let y = index / addr.width;
-            // Get column from buffer index
-            let x = index - (y * addr.width);
-            // Get led address (tuple of (univer, address)) from address map
-            let addr = addr[(x, y)];
-            // Apply the pixel to the coresponding dmx packet/arnet univer
-            self.buffer[addr.univer].set_pixel(addr.address, *pixel);
+            //Get row from buffer index
+            // //let y = index / addr.width;
+            //Get column from buffer index
+            // //let x = index - (y * addr.width);
+            //Get led address (tuple of (univer, address)) from address map
+            // //let addr = addr[(x, y)];
+            //Apply the pixel to the coresponding dmx packet/arnet univer
+            // //self.buffer[addr.univer].set_pixel(addr.address, *pixel);
         }
         self
     }
@@ -95,7 +96,7 @@ impl<F: (FnMut(&ArtnetPacket))> Client<F> {
         }
         // Return a new client instance and generate led addresses mapping
         // TODO open OLA session
-        let matrix = AddrMap::from_mapping(&map);
+        let matrix = AddrMap::from_mapping(map.into());
         let packet = ArtnetPacket::new(&matrix);
         Ok(Self {
             matrix,

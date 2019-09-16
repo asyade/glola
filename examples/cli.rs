@@ -49,7 +49,7 @@ fn gif_loop(opt: MappingOpt) {
 }
 
 fn dump_addr(opt: MappingOpt) {
-    let addr = AddrMap::from_mapping(&opt);
+    let addr = AddrMap::from_mapping(opt.into());
     println!("{}", addr);
 }
 
