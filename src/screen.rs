@@ -4,8 +4,6 @@ use fps_counter::FPSCounter;
 pub struct Screen<T: Encoder + Sized> {
     matrix: AddrMap,
     buffer: Vec<u8>,
-    width: usize,
-    height: usize,
     output_encoder: T,
     fps: FPSCounter,
 }
@@ -17,8 +15,6 @@ impl<T: Encoder + Sized> Screen<T> {
         Self {
             buffer: vec![0; width * height * matrix.opt.pixel_size],
             matrix,
-            height,
-            width,
             output_encoder,
             fps: FPSCounter::new(),
         }
@@ -26,11 +22,13 @@ impl<T: Encoder + Sized> Screen<T> {
 
     /// Apply a screen buffer and output it to the encoder
     /// buffer size must match matrix size, return actual FPS
-    pub fn apply(&mut self, buffer: &[u8]) -> usize {
+    pub fn apply<'a>(&'a mut self, buffer: &[u8]) -> (usize, &'a [super::dmx::ArtDmx]) {
         assert_eq!(buffer.len(), self.buffer.len());
         unsafe { self.buffer.set_len(0) };
         self.buffer.extend_from_slice(buffer);
-        self.output_encoder.encode(&self.matrix, &self.buffer);
-        self.fps.tick()
+        (
+            self.fps.tick(),
+            self.output_encoder.encode(&self.matrix, &self.buffer),
+        )
     }
 }

@@ -1,10 +1,9 @@
 use super::prelude::*;
 
 pub mod artnet;
-pub mod debug;
+use crate::dmx::ArtDmx;
 pub use artnet::*;
-pub use debug::*;
 
 pub trait Encoder {
-    fn encode(&mut self, matrix: &AddrMap, buffer: &[u8]);
+    fn encode<'a>(&'a mut self, matrix: &AddrMap, buffer: &[u8]) -> &'a [ArtDmx];
 }

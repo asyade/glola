@@ -51,27 +51,16 @@ impl ArtnetEncoder {
 }
 
 impl Encoder for ArtnetEncoder {
-    fn encode(&mut self, matrix: &AddrMap, buffer: &[u8]) {
+    fn encode<'a>(&'a mut self, matrix: &AddrMap, buffer: &[u8]) -> &'a [ArtDmx] {
         for y in 0..self.opt.height {
+            let yy = y * matrix.opt.pixel_size * self.opt.width;
             for x in 0..self.opt.width {
                 let addr = &matrix.addr[x][y];
-                let offset =
-                    (x * matrix.opt.pixel_size) + ((y * matrix.opt.pixel_size) * self.opt.width);
-                let daptr = &mut self.univers[addr.univer].data;
-                for i in 0..self.opt.pixel_size {
-                    daptr[i + (addr.address)] = buffer[offset + i];
-                }
-                // self.univers[addr.univer].data[addr.address..addr.address + self.opt.pixel_size]
-                // .copy_from_slice(&buffer[offset..offset + self.opt.pixel_size]);
+                let offset = (x * matrix.opt.pixel_size) + yy;
+                self.univers[addr.univer].data[addr.address..addr.address + self.opt.pixel_size]
+                    .copy_from_slice(&buffer[offset..offset + self.opt.pixel_size]);
             }
         }
-        println!(
-            "{}###########{}",
-            termion::color::Fg(termion::color::Red),
-            termion::color::Fg(termion::color::Reset)
-        );
-        for i in self.univers.iter() {
-            println!("{}", i);
-        }
+        &self.univers
     }
 }
