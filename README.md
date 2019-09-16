@@ -31,4 +31,13 @@ Here is an example config (you can get it from `cargo run --example cli -- defau
 ```
 ## CLI
 A simple CLI tool is provided with glola, its provide some feature like addressing debug or media transcoding.
-*RTFM*
+```
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+SUBCOMMANDS:
+    dump    Inspect a configuration file and dump address map.
+    gif     Send a GIF file frame by frame to the matrix.
+    help    Prints this message or the help of the given subcommand(s)
+```
