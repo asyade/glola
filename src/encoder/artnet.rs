@@ -13,9 +13,9 @@ pub struct ArtnetEncoder {
 
 impl std::fmt::Display for ArtDmx {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(
+        writeln!(
             fmt,
-            "ID: {:?}, OP: {:?}, VER: {:?}, LEN: {:?}\n",
+            "ID: {:?}, OP: {:?}, VER: {:?}, LEN: {:?}",
             self.id, self.op_code, self.proto_ver, self.lenght
         )?;
         for line in hexdump::hexdump_iter(&self.data[0..self.lenght as usize]) {
@@ -35,7 +35,7 @@ impl ArtDmx {
             physical: 0,
             sub_uni: 0, //TODO
             net: 0,     //TODO
-            lenght: (opt.univer_width * opt.univer_height) as u16,
+            lenght: (opt.univer_width * opt.univer_height * opt.pixel_size) as u16,
             data: [0; 512],
         }
     }
@@ -52,15 +52,24 @@ impl ArtnetEncoder {
 
 impl Encoder for ArtnetEncoder {
     fn encode(&mut self, matrix: &AddrMap, buffer: &[u8]) {
-        for x in 0..self.opt.width {
-            for y in 0..self.opt.height {
+        for y in 0..self.opt.height {
+            for x in 0..self.opt.width {
                 let addr = &matrix.addr[x][y];
-                let offset = x + (y * self.opt.width);
-                self.univers[addr.univer].data[addr.address..addr.address + self.opt.pixel_size]
-                    .copy_from_slice(&buffer[offset..offset + self.opt.pixel_size]);
+                let offset =
+                    (x * matrix.opt.pixel_size) + ((y * matrix.opt.pixel_size) * self.opt.width);
+                let daptr = &mut self.univers[addr.univer].data;
+                for i in 0..self.opt.pixel_size {
+                    daptr[i + (addr.address)] = buffer[offset + i];
+                }
+                // self.univers[addr.univer].data[addr.address..addr.address + self.opt.pixel_size]
+                // .copy_from_slice(&buffer[offset..offset + self.opt.pixel_size]);
             }
         }
-
+        println!(
+            "{}###########{}",
+            termion::color::Fg(termion::color::Red),
+            termion::color::Fg(termion::color::Reset)
+        );
         for i in self.univers.iter() {
             println!("{}", i);
         }

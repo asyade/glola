@@ -89,7 +89,7 @@ impl PreMapping {
             .map(|x| {
                 (0..opt.univer_height)
                     .map(|y| PixelAddr {
-                        address: y + (opt.univer_height * x),
+                        address: (y + (opt.univer_height * x)) * opt.pixel_size,
                         univer: 0,
                     })
                     .collect()
