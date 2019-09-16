@@ -17,10 +17,15 @@ Here is an example config (you can get it from `cargo run --example cli -- defau
 ### Generate config
 ```json
 {
-  "ordering": "NextcolumnFromBottom", // Can be NextcolumnFromBottom or NextcolumnFromTop see glola::Matrix
-  "dmx_size": 512,
-  "width": 10,
-  "height": 10
+    "dmx_size": 400,
+    "width": 40,
+    "height": 40,
+    "univer_height": 10,
+    "channel_per_pixel": 10,
+    "color_mode": "RGBA",
+    "displacement": "Snake",
+    "direction": "Horizontal",
+    "orientation": "BottomRight"
 }
 
 ```
