@@ -29,12 +29,6 @@ Here is an example config (you can get it from `cargo run --example cli -- defau
 }
 
 ```
-### Show address map
-Once your environment is set you can run the following command to verify your led addressing
-```bash
-cargo run --example cli -- dump-addr
-```
-### Decode GIF
-```bash
-cargo run --example cli -- gif-loop [GIF FILE PATH]
-```
+## CLI
+A simple CLI tool is provided with glola, its provide some feature like addressing debug or media transcoding.
+*RTFM*
