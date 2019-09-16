@@ -18,11 +18,12 @@ fn gif_loop(gif: &str, opt: MappingOpt) {
     let mut decoder = decoder.read_info().unwrap();
     let mut sized_frames: Vec<Vec<u8>> = vec![];
     while let Some(frame) = decoder.read_next_frame().unwrap() {
-        sized_frames.push(frame.buffer[0..opt.width * opt.height].to_vec());
+        sized_frames.push(frame.buffer[0..opt.width * opt.height * opt.pixel_size].to_vec());
     }
     loop {
         for frame in sized_frames.iter() {
-            dbg!("FPS: ", screen.apply(frame));
+            let fps = screen.apply(frame);
+            println!("FPS: {}", fps);
         }
     }
 }

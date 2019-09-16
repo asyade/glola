@@ -15,8 +15,8 @@ impl<T: Encoder + Sized> Screen<T> {
         let width = matrix.opt.width;
         let height = matrix.opt.height;
         Self {
+            buffer: vec![0; width * height * matrix.opt.pixel_size],
             matrix,
-            buffer: vec![0; width * height],
             height,
             width,
             output_encoder,

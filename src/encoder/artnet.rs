@@ -11,6 +11,20 @@ pub struct ArtnetEncoder {
     univers: Vec<ArtDmx>,
 }
 
+impl std::fmt::Display for ArtDmx {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            fmt,
+            "ID: {:?}, OP: {:?}, VER: {:?}, LEN: {:?}\n",
+            self.id, self.op_code, self.proto_ver, self.lenght
+        )?;
+        for line in hexdump::hexdump_iter(&self.data[0..self.lenght as usize]) {
+            write!(fmt, "{}\n", line)?;
+        }
+        Ok(())
+    }
+}
+
 impl ArtDmx {
     fn new(opt: &MappingOptExt) -> Self {
         Self {
@@ -42,10 +56,13 @@ impl Encoder for ArtnetEncoder {
             for y in 0..self.opt.height {
                 let addr = &matrix.addr[x][y];
                 let offset = x + (y * self.opt.width);
-                dbg!(addr.univer, addr.address);
                 self.univers[addr.univer].data[addr.address..addr.address + self.opt.pixel_size]
                     .copy_from_slice(&buffer[offset..offset + self.opt.pixel_size]);
             }
+        }
+
+        for i in self.univers.iter() {
+            println!("{}", i);
         }
     }
 }

@@ -157,7 +157,6 @@ impl PreMapping {
 
 impl Into<Mapping> for PreMapping {
     fn into(self) -> Mapping {
-        dbg!(&self);
         let mut mapping = vec![vec![PixelAddr::empty(); self.1.height]; self.1.width];
         for (uid, univer) in self.0.into_iter().enumerate() {
             let univer_y = uid / self.1.univer_per_column;
@@ -196,7 +195,7 @@ impl From<MappingOpt> for MappingOptExt {
         if opt.height % opt.univer_height != 0 {
             println!("Warning: univer height is not well steup, last univer height can't equal other univer height this can result of unedifned behaviour");
         }
-        let se = Self {
+        Self {
             width: opt.width,
             height: opt.height,
             univer_width,
@@ -208,8 +207,7 @@ impl From<MappingOpt> for MappingOptExt {
             direction: opt.direction,
             orientation: opt.orientation,
             pixel_size: nbr_led_per_pixel,
-        };
-        se
+        }
     }
 }
 
