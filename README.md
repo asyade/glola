@@ -19,8 +19,8 @@ Here is an example config (you can get it from `cargo run --example cli -- defau
 {
   "ordering": "NextcolumnFromBottom", // Can be NextcolumnFromBottom or NextcolumnFromTop see glola::Matrix
   "dmx_size": 512,
-  "column": 10,
-  "row": 10
+  "width": 10,
+  "height": 10
 }
 
 ```

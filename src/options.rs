@@ -2,47 +2,37 @@
 //! User input data structures
 //! ```rust
 //! //! ```
-//! 
+//!
 
 use serde::{Deserialize, Serialize};
-///
-/// Used to determinate addressing of leds
-///
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Serialize, Deserialize)]
-pub enum LedOrdering {
-    ///
-    /// Assume led addressing as follow
-    ///  +-+  +-+  +-+
-    ///  |1|  |8|  |9|
-    ///  +-+  +-+  +-+
-    ///  +-+  +-+  +-+
-    ///  |2|  |7|  ...
-    ///  +-+  +-+  +-+
-    ///  +-+  +-+
-    ///  |3|  |6|
-    ///  +-+  +-+
-    ///  +-+  +-+
-    ///  |4|  |5|
-    ///  +-+  +-+
-    ///
-    NextcolumnFromBottom,
-    ///
-    /// Assume led addressing as follow
-    ///
-    /// +-+  +-+  +-+
-    /// |1|  |5|  |9|
-    /// +-+  +-+  +-+
-    /// +-+  +-+  +-+
-    /// |2|  |6|  ...
-    /// +-+  +-+  +-+
-    /// +-+  +-+
-    /// |3|  |7|
-    /// +-+  +-+
-    /// +-+  +-+
-    /// |4|  |8|
-    /// +-+  +-+
-    ///
-    NextcolumnFromTop,
+
+/// Used to derterminate number of address used by one pixel and image buffer parsing
+#[repr(usize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
+pub enum ColorMode {
+    RGBA = 4,
+    RGB = 3,
+}
+
+/// Used to determinate position of the first led of each univer
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
+pub enum Orientation {
+    TopLeft,
+    BottomLeft,
+    TopRight,
+    BottomRight,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
+pub enum Displacement {
+    Snake,
+    ZigZag,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
+pub enum Direction {
+    Horizontal,
+    Vertical,
 }
 
 ///
@@ -50,15 +40,17 @@ pub enum LedOrdering {
 ///
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MappingOpt {
-    pub ordering: LedOrdering,
     /// ex: 512
     pub dmx_size: usize,
-    // Number of column
-    pub column: usize,
-    // Number of row per column
-    pub row: usize,
+    // Number of width
+    pub width: usize,
+    // Number of height per width
+    pub height: usize,
     // Height of individual chunk/univers)  width is determinated b dmx_size
     pub univer_height: usize,
-    /// Nbr channel used by a single pixel
-    pub channel_per_pixel: usize,
+    /// Color mode, nbr channel per pixel is determinated from this, example: RGBA take 4 address and RGB take 3
+    pub color_mode: ColorMode,
+    pub displacement: Displacement,
+    pub direction: Direction,
+    pub orientation: Orientation,
 }

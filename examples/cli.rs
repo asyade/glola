@@ -16,7 +16,7 @@ fn usage() {
 }
 
 fn gif_loop(opt: MappingOpt) {
-    let buff_size = opt.row * opt.column;
+    let buff_size = opt.height * opt.width;
     let mut buffer: Vec<RGBW> = (0..buff_size).map(|_| RGBW::from(0)).collect();
     let mut decoder = gif::Decoder::new(
         File::open(std::env::args().nth(2).expect("No gif file provided"))
@@ -27,7 +27,7 @@ fn gif_loop(opt: MappingOpt) {
     // Read the file header
     let mut decoder = decoder.read_info().unwrap();
     // let environment = Environment::query().unwrap();
-    let n = opt.column * opt.row;
+    let n = opt.width * opt.height;
     let mut cli = Client::new(opt, |buffer| {
         println!("{}", buffer);
     })
@@ -55,12 +55,14 @@ fn dump_addr(opt: MappingOpt) {
 
 fn default_cfg() {
     let map = MappingOpt {
-        channel_per_pixel: 4,
-        column: 10,
-        row: 10,
+        width: 10,
+        height: 10,
         dmx_size: 10,
         univer_height: 10,
-        ordering: LedOrdering::NextcolumnFromTop,
+        color_mode: ColorMode::RGBA,
+        displacement: Displacement::Snake,
+        direction: Direction::Horizontal,
+        orientation: Orientation::TopLeft,
     };
     println!("{}", serde_json::to_string_pretty(&map).unwrap());
 }

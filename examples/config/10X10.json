@@ -1,8 +1,11 @@
 {
-    "ordering": "NextcolumnFromTop",
     "dmx_size": 400,
-    "column": 20,
-    "row": 20,
+    "width": 40,
+    "height": 40,
     "univer_height": 10,
-    "channel_per_pixel": 4
+    "channel_per_pixel": 10,
+    "color_mode": "RGBA",
+    "displacement": "Snake",
+    "direction": "Horizontal",
+    "orientation": "BottomRight"
 }
