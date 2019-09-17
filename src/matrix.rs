@@ -223,5 +223,29 @@ impl AddrMap {
     }
 }
 
+pub struct RevAddrMap {
+    pub offset: Vec<Vec<usize>>,
+}
+
+impl From<AddrMap> for RevAddrMap {
+    fn from(map: AddrMap) -> RevAddrMap {
+        let mut offset_map = vec![
+            vec![0; map.opt.univer_height * map.opt.univer_width];
+            map.opt.univer_per_column * map.opt.univer_per_row
+        ];
+        for x in 0..map.opt.width {
+            for y in 0..map.opt.height {
+                let addr = map.addr[x][y];
+                let univer = &mut offset_map[addr.univer];
+                let x_in = x % map.opt.univer_width;
+                let y_in = y % map.opt.univer_height;
+                dbg!(x_in, y_in);
+                univer[addr.address / map.opt.pixel_size] = x_in + (y_in * map.opt.univer_width);
+            }
+        }
+        RevAddrMap { offset: offset_map }
+    }
+}
+
 #[cfg(test)]
 mod tests {}

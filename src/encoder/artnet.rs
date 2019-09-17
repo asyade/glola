@@ -53,12 +53,12 @@ impl ArtnetEncoder {
 impl Encoder for ArtnetEncoder {
     fn encode<'a>(&'a mut self, matrix: &AddrMap, buffer: &[u8]) -> &'a [ArtDmx] {
         for y in 0..self.opt.height {
-            let yy = y * matrix.opt.pixel_size * self.opt.width;
+            let buffer_row_offset = y * self.opt.width * matrix.opt.pixel_size;
             for x in 0..self.opt.width {
-                let addr = &matrix.addr[x][y];
-                let offset = (x * matrix.opt.pixel_size) + yy;
-                self.univers[addr.univer].data[addr.address..addr.address + self.opt.pixel_size]
-                    .copy_from_slice(&buffer[offset..offset + self.opt.pixel_size]);
+                let PixelAddr { address, univer } = matrix.addr[x][y];
+                let buffer_offset = (x * matrix.opt.pixel_size) + buffer_row_offset;
+                self.univers[univer].data[address..address + self.opt.pixel_size]
+                    .copy_from_slice(&buffer[buffer_offset..buffer_offset + self.opt.pixel_size]);
             }
         }
         &self.univers

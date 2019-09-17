@@ -8,6 +8,7 @@ use log::{debug, error, info, warn};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
+use sdl2::pixels::PixelFormatEnum;
 use sdl2::rect::Rect;
 use sdl2::render::TextureCreator;
 use sdl2::render::*;
@@ -15,8 +16,12 @@ use sdl2::video::*;
 use sdl2::EventPump;
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::Read;
+use std::io;
+use std::io::Cursor;
+use std::io::{Read, Seek, Write};
+use std::path::Path;
 use std::time::Duration;
+
 const FPS: f64 = 60.0;
 const FRAME_DELLAY: f64 = 1000.0 / FPS;
 const BW: usize = 1;
@@ -34,6 +39,7 @@ macro_rules! regulate_fps {
 struct DebugRenderer {
     sdl_context: sdl2::Sdl,
     opt: MappingOptExt,
+    matrix: RevAddrMap,
     mul: usize,
     canvas: WindowCanvas,
     event_pump: EventPump,
@@ -55,11 +61,10 @@ impl DebugRenderer {
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
         canvas.present();
-        let mut event_pump = sdl_context.event_pump().unwrap();
-        let texture_creator = canvas.texture_creator();
         Self {
-            texture_creator,
-            event_pump,
+            matrix: AddrMap::from_mapping(opt.clone()).into(),
+            texture_creator: canvas.texture_creator(),
+            event_pump: sdl_context.event_pump().unwrap(),
             sdl_context,
             canvas,
             mul,
@@ -81,13 +86,11 @@ impl DebugRenderer {
     }
 
     fn dump(&mut self, packet: &[glola::dmx::ArtDmx]) {
-        for (i, u) in packet.iter().enumerate() {
-            let x_univer = i % self.opt.univer_per_column;
-            let y_univer = i / self.opt.univer_per_column;
-            let mut x_offset_in = x_univer * self.opt.univer_width * self.mul;
-            let mut y_offset_in = y_univer * self.opt.univer_height * self.mul;
-            x_offset_in += BW * (1 + x_univer);
-            y_offset_in += BW * (1 + y_univer);
+        for (univer_idx, u) in packet.iter().enumerate() {
+            let x_univer = univer_idx % self.opt.univer_per_column;
+            let y_univer = univer_idx / self.opt.univer_per_column;
+            let x_offset_in = (BW * (1 + x_univer)) + (x_univer * self.opt.univer_width * self.mul);
+            let y_offset_in = BW * (1 + y_univer) + (y_univer * self.opt.univer_height * self.mul);
             let mut texture = self
                 .texture_creator
                 .create_texture_streaming(
@@ -97,16 +100,15 @@ impl DebugRenderer {
                 )
                 .map_err(|e| e.to_string())
                 .expect("Failed to create texture");
-            // Create a red-green gradient
             texture
                 .with_lock(None, |buffer: &mut [u8], pitch: usize| {
-                    for y in 0..self.opt.univer_height {
-                        for x in 0..self.opt.univer_width {
-                            let offset = y * pitch + x * 4;
-                            buffer[offset] = u.data[offset];
-                            buffer[offset + 1] = u.data[offset + 1];
-                            buffer[offset + 2] = u.data[offset + 2];
-                            buffer[offset + 3] = u.data[offset + 3];
+                    let mut idx = 0;
+                    let map = &self.matrix.offset[univer_idx];
+                    while idx < buffer.len() {
+                        let mapped_offset = map[idx / self.opt.pixel_size] * 4;
+                        for i in 0..self.opt.pixel_size {
+                            buffer[mapped_offset + i] = u.data[idx];
+                            idx += 1;
                         }
                     }
                 })
@@ -128,46 +130,80 @@ impl DebugRenderer {
     }
 }
 
+struct GifLoader {
+    pub frames: Vec<(Duration, Vec<u8>)>,
+}
+
+impl GifLoader {
+    fn load<T: AsRef<Path>>(path: T, opt: &MappingOptExt) -> io::Result<Self> {
+        let mut decoder = gif::Decoder::new(File::open(path)?);
+        decoder.set(gif::ColorOutput::RGBA);
+        let mut decoder = decoder
+            .read_info()
+            .map_err(|_| io::Error::last_os_error())?;
+        let mut sized_frames = vec![];
+        while let Some(frame) = decoder
+            .read_next_frame()
+            .map_err(|_| io::Error::last_os_error())?
+        {
+            let mut new_frame = vec![0; opt.width * opt.height * opt.pixel_size];
+            let height_max = std::cmp::min(frame.height as usize, opt.height);
+            dbg!(frame.width, frame.height, opt.height, opt.width, height_max);
+            let mut rd = Cursor::new(&frame.buffer);
+            let mut wr = Cursor::new(&mut new_frame);
+            let mut line: Vec<u8> = vec![0; opt.width * opt.pixel_size];
+            if (frame.width as usize) < opt.width {
+                for y in 0..height_max {
+                    rd.read_exact(&mut line)?;
+                    line.iter_mut().for_each(|e| *e = y as u8);
+                    wr.write_all(&line)?;
+                }
+            } else {
+                let diff = (frame.width as usize) - opt.width;
+                for y in 0..height_max {
+                    rd.read_exact(&mut line)?;
+                    rd.seek(std::io::SeekFrom::Current(diff as i64))?;
+                    wr.write_all(&line)?;
+                }
+            }
+            sized_frames.push((Duration::from_millis((frame.delay as u64) * 10), new_frame));
+        }
+        Ok(GifLoader {
+            frames: sized_frames,
+        })
+    }
+}
+
 fn gif_loop(gif: &str, opt: MappingOpt, hexd: bool, mul: usize, window: bool) {
     let mut screen = glola::init_arnet_screen(opt.clone());
     let opt: MappingOptExt = opt.into();
-    let mut decoder = gif::Decoder::new(File::open(gif).unwrap());
-    decoder.set(gif::ColorOutput::RGBA);
-    let mut decoder = decoder.read_info().unwrap();
-    let mut sized_frames: Vec<Vec<u8>> = vec![];
-    while let Some(frame) = decoder.read_next_frame().unwrap() {
-        if opt.width * opt.height * opt.pixel_size >= frame.buffer.len() {
-            let mut frm = frame.buffer.to_vec();
-            let miss = opt.width * opt.height * opt.pixel_size - frame.buffer.len();
-            for _ in 0..miss {
-                frm.push(0x0);
-            }
-            sized_frames.push(frm);
-        } else {
-            sized_frames.push(frame.buffer[0..opt.width * opt.height * opt.pixel_size].to_vec());
-        }
-    }
-    let mut cycle = sized_frames.iter().cycle();
+    let gif = GifLoader::load(gif, &opt).expect("Wrong gif file !");
     let mut dbg = if window {
-        Some(DebugRenderer::new(mul, opt.clone().into()))
+        Some(DebugRenderer::new(mul, opt.clone()))
     } else {
         None
     };
-    'running: while let Some(frame) = cycle.next() {
+    let mut cycle = gif.frames.iter().cycle();
+    for frame in cycle {
         let instant = std::time::Instant::now();
-        let _ = dbg.as_mut().map(|e| e.poll_event());
-        let (fps, packet) = screen.apply(frame);
-        for univer in packet {}
-        if hexd {
-            for u in packet.iter() {
-                println!("{}", u)
+        let frame_duration = std::time::Instant::now();
+        // We're sending 60 fps even if the gif do not have this frame rate to ensure the matrix can handle it
+        while frame_duration.elapsed() < frame.0 {
+            let instant = std::time::Instant::now();
+            let _ = dbg.as_mut().map(|e| e.poll_event());
+            let (fps, packet) = screen.apply(&frame.1);
+            println!("fps: {}", fps);
+            if hexd {
+                for u in packet.iter() {
+                    println!("{}", u)
+                }
             }
+            let _ = dbg.as_mut().map(|e| e.dump(packet));
+            regulate_fps!(instant.elapsed().as_millis() as f64, FRAME_DELLAY);
         }
-        let _ = dbg.as_mut().map(|e| e.dump(packet));
-        regulate_fps!(instant.elapsed().as_millis() as f64, FRAME_DELLAY);
     }
 }
-use sdl2::pixels::PixelFormatEnum;
+
 fn dump(opt: MappingOpt) {
     let opt: MappingOptExt = opt.into();
     let addr = AddrMap::from_mapping(opt.clone());
