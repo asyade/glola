@@ -239,7 +239,6 @@ impl From<AddrMap> for RevAddrMap {
                 let univer = &mut offset_map[addr.univer];
                 let x_in = x % map.opt.univer_width;
                 let y_in = y % map.opt.univer_height;
-                dbg!(x_in, y_in);
                 univer[addr.address / map.opt.pixel_size] = x_in + (y_in * map.opt.univer_width);
             }
         }

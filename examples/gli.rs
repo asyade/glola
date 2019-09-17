@@ -50,15 +50,15 @@ impl DebugRenderer {
     fn new(mul: usize, opt: MappingOptExt) -> Self {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
-        let w = ((opt.width * mul) + ((1 + opt.univer_per_column) * BW)) as u32;
-        let h = ((opt.height * mul) + ((1 + opt.univer_per_row) * BW)) as u32;
+        let w = (opt.width * mul) as u32;
+        let h = (opt.height * mul) as u32;
         let window = video_subsystem
             .window("GLOLA", w, h)
             .position_centered()
             .build()
             .unwrap();
         let mut canvas = window.into_canvas().build().unwrap();
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
+        canvas.set_draw_color(Color::RGBA(0, 0, 0, 0));
         canvas.clear();
         canvas.present();
         Self {
@@ -89,12 +89,12 @@ impl DebugRenderer {
         for (univer_idx, u) in packet.iter().enumerate() {
             let x_univer = univer_idx % self.opt.univer_per_column;
             let y_univer = univer_idx / self.opt.univer_per_column;
-            let x_offset_in = (BW * (1 + x_univer)) + (x_univer * self.opt.univer_width * self.mul);
-            let y_offset_in = BW * (1 + y_univer) + (y_univer * self.opt.univer_height * self.mul);
+            let x_offset_in = x_univer * self.opt.univer_width * self.mul;
+            let y_offset_in = y_univer * self.opt.univer_height * self.mul;
             let mut texture = self
                 .texture_creator
                 .create_texture_streaming(
-                    PixelFormatEnum::RGBA32,
+                    PixelFormatEnum::ARGB8888,
                     self.opt.univer_width as u32,
                     self.opt.univer_height as u32,
                 )
@@ -106,10 +106,10 @@ impl DebugRenderer {
                     let map = &self.matrix.offset[univer_idx];
                     while idx < buffer.len() {
                         let mapped_offset = map[idx / self.opt.pixel_size] * 4;
-                        for i in 0..self.opt.pixel_size {
-                            buffer[mapped_offset + i] = u.data[idx];
-                            idx += 1;
+                        for (i, argb_i) in &[(0, 3), (1, 1), (1, 1), (2, 2), (3, 0)] {
+                            buffer[mapped_offset + i] = u.data[idx + argb_i];
                         }
+                        idx += 4;
                     }
                 })
                 .expect("Filed to stream texture");
@@ -148,21 +148,20 @@ impl GifLoader {
         {
             let mut new_frame = vec![0; opt.width * opt.height * opt.pixel_size];
             let height_max = std::cmp::min(frame.height as usize, opt.height);
-            dbg!(frame.width, frame.height, opt.height, opt.width, height_max);
             let mut rd = Cursor::new(&frame.buffer);
             let mut wr = Cursor::new(&mut new_frame);
             let mut line: Vec<u8> = vec![0; opt.width * opt.pixel_size];
             if (frame.width as usize) < opt.width {
                 for y in 0..height_max {
-                    rd.read_exact(&mut line)?;
-                    line.iter_mut().for_each(|e| *e = y as u8);
+                    rd.read_exact(&mut line[0..(frame.width as usize * opt.pixel_size)])?;
                     wr.write_all(&line)?;
                 }
             } else {
-                let diff = (frame.width as usize) - opt.width;
                 for y in 0..height_max {
-                    rd.read_exact(&mut line)?;
-                    rd.seek(std::io::SeekFrom::Current(diff as i64))?;
+                    rd.read_exact(&mut line[0..opt.width * opt.pixel_size])?;
+                    rd.seek(std::io::SeekFrom::Current(
+                        (frame.width as i64 - opt.width as i64) * opt.pixel_size as i64,
+                    ))?;
                     wr.write_all(&line)?;
                 }
             }
