@@ -36,38 +36,19 @@ Here is an example config (you can get it from `cargo run --example cli -- defau
 
 ## CLI
 A simple CLI tool is provided with glola, its provide some feature like addressing debug or media transcoding.
-```
-Loads a GIF image and sends its frames from an infinite loop.
 
+```
 USAGE:
-    gli gif [FLAGS] [OPTIONS] -c <config> -g <gif>
+    gli [SUBCOMMAND]
 
 FLAGS:
-        --help       
-            Prints help information
+    -h, --help       Prints help information
+    -V, --version    Prints version information
 
-    -h               
-            Hexdump every outgoing packet on the standard output.
-
-    -V, --version    
-            Prints version information
-
-    -w               
-            Parse and display in a window the outgoing packet content.
-
-
-OPTIONS:
-    -c <config>            
-            The matrix configuration is done using a json file, to check a configuration you can use the subcommand
-            dump, example config for a 10x10 matrix that use DMX512 : `{"dmx_size": 512,"width": 30,"height":
-            30,"univer_height": 10,"channel_per_pixel": 10,"color_mode": "RGBA","displacement": "Snake","direction":
-            "Horizontal","orientation": "TopLeft"}`
-    -g <gif>               
-            GIF file to parse.
-
-    -m <multiplier>        
-            Pixel size multiplier display on the screen (use low value for large matrix and increase it for small one).
-
+SUBCOMMANDS:
+    dump    Inspect a configuration file and dump addresses map.
+    gif     Loads a GIF image and sends its frames from an infinite loop.
+    help    Prints this message or the help of the given subcommand(s)
 ```
 
 ### Example
