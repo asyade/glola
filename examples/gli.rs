@@ -231,11 +231,13 @@ fn main() {
         .about("A CLI backed with OLA/OLA to control huge led matrix controlled using many arnet univer.")
         .subcommand(
             SubCommand::with_name("gif")
-                .about("Send a GIF file frame by frame to the matrix.")
+                .about("Loads a GIF image and sends its frames from an infinite loop.")
                 .arg(
                     Arg::with_name("config")
                         .short("c")
-                        .help("Configuration file (json).")
+                        .help("Matrix configuration file.")
+
+                        .long_help("The matrix configuration is done using a json file, to check a configuration you can use the subcommand dump, example config for a 10x10 matrix that use DMX512 : `{\"dmx_size\": 512,\"width\": 30,\"height\": 30,\"univer_height\": 10,\"channel_per_pixel\": 10,\"color_mode\": \"RGBA\",\"displacement\": \"Snake\",\"direction\": \"Horizontal\",\"orientation\": \"TopLeft\"}`")
                         .takes_value(true)
                         .required(true),
                 )
@@ -249,28 +251,28 @@ fn main() {
                 .arg(
                     Arg::with_name("window")
                         .short("w")
-                        .help("Debug matrix on a sdl2 window.")
+                        .help("Parse and display in a window the outgoing packet content.")
                 )
                 .arg(
                     Arg::with_name("multiplier")
                         .requires("window")
                         .short("m")
                         .takes_value(true)
-                        .help("Size of a pixel in the visual interface")
+                        .help("Pixel size multiplier display on the screen (use low value for large matrix and increase it for small one).")
                 )
                 .arg(
                     Arg::with_name("hexdump")
                         .short("h")
-                        .help("Dump dmx packet to stdout")
+                        .help("Hexdump every outgoing packet on the standard output.")
                 ),
         )
         .subcommand(
             SubCommand::with_name("dump")
-                .about("Inspect a configuration file and dump address map.")
+                .about("Inspect a configuration file and dump addresses map.")
                 .arg(
                     Arg::with_name("config")
                         .short("c")
-                        .help("Configuration file (json).")
+                        .help("Configuration to inspecte")
                         .takes_value(true)
                         .required(true),
                 ),
