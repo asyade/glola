@@ -58,7 +58,6 @@ impl DebugRenderer {
             .build()
             .unwrap();
         let mut canvas = window.into_canvas().build().unwrap();
-        canvas.set_draw_color(Color::RGBA(0, 0, 0, 0));
         canvas.clear();
         canvas.present();
         Self {
@@ -94,7 +93,7 @@ impl DebugRenderer {
             let mut texture = self
                 .texture_creator
                 .create_texture_streaming(
-                    PixelFormatEnum::ARGB8888,
+                    PixelFormatEnum::RGBA32,
                     self.opt.univer_width as u32,
                     self.opt.univer_height as u32,
                 )
@@ -104,12 +103,13 @@ impl DebugRenderer {
                 .with_lock(None, |buffer: &mut [u8], pitch: usize| {
                     let mut idx = 0;
                     let map = &self.matrix.offset[univer_idx];
-                    while idx < buffer.len() {
-                        let mapped_offset = map[idx / self.opt.pixel_size] * 4;
-                        for (i, argb_i) in &[(0, 3), (1, 1), (1, 1), (2, 2), (3, 0)] {
-                            buffer[mapped_offset + i] = u.data[idx + argb_i];
+                    for idx in 0..buffer.len() / self.opt.pixel_size {
+                        let mapped_offset = map[idx] * self.opt.pixel_size;
+                        let off = idx * self.opt.pixel_size;
+                        for i in 0..4 {
+                            buffer[mapped_offset + i] = u.data[off + i];
                         }
-                        idx += 4;
+                        // buffer[mapped_offset + 3] = std::u8::MAX - u.data[off + 3];
                     }
                 })
                 .expect("Filed to stream texture");
@@ -135,6 +135,17 @@ struct GifLoader {
 }
 
 impl GifLoader {
+    fn merge_alpha(old: &[u8], new: &mut [u8]) {
+        let mut idx = 3;
+        while idx < std::cmp::min(old.len(), new.len()) {
+            if new[idx] == 0 && old[idx] != 0 {
+                dbg!("Merge");
+                new[idx] = old[idx];
+            }
+            idx += 4;
+        }
+    }
+
     fn load<T: AsRef<Path>>(path: T, opt: &MappingOptExt) -> io::Result<Self> {
         let mut decoder = gif::Decoder::new(File::open(path)?);
         decoder.set(gif::ColorOutput::RGBA);
@@ -142,13 +153,18 @@ impl GifLoader {
             .read_info()
             .map_err(|_| io::Error::last_os_error())?;
         let mut sized_frames = vec![];
-        while let Some(frame) = decoder
+        let mut last: Option<Vec<u8>> = None;
+        while let Some(mut frame) = decoder
             .read_next_frame()
             .map_err(|_| io::Error::last_os_error())?
         {
             let mut new_frame = vec![0; opt.width * opt.height * opt.pixel_size];
+            let mut curr = frame.buffer.to_vec();
+            if let Some(last) = last {
+                Self::merge_alpha(&last, &mut curr);
+            }
             let height_max = std::cmp::min(frame.height as usize, opt.height);
-            let mut rd = Cursor::new(&frame.buffer);
+            let mut rd = Cursor::new(&curr);
             let mut wr = Cursor::new(&mut new_frame);
             let mut line: Vec<u8> = vec![0; opt.width * opt.pixel_size];
             if (frame.width as usize) < opt.width {
@@ -165,6 +181,7 @@ impl GifLoader {
                     wr.write_all(&line)?;
                 }
             }
+            last = Some(curr);
             sized_frames.push((Duration::from_millis((frame.delay as u64) * 10), new_frame));
         }
         Ok(GifLoader {

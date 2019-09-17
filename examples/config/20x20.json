@@ -1,7 +1,7 @@
 {
-    "dmx_size": 512,
-    "width": 10,
-    "height": 10,
+    "dmx_size": 400,
+    "width": 20,
+    "height": 20,
     "univer_height": 10,
     "channel_per_pixel": 50,
     "color_mode": "RGBA",

@@ -46,3 +46,9 @@ SUBCOMMANDS:
     gif     Send a GIF file frame by frame to the matrix.
     help    Prints this message or the help of the given subcommand(s)
 ```
+
+### Example
+
+```
+cargo run --release --example gli -- gif -c ./examples/config/40x40.json -g ./examples/imgs/40X40.gif -w -m 10
+```
