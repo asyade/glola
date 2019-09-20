@@ -26,7 +26,7 @@ pub struct MappingOptExt {
     pub color_mode: ColorMode,
     pub displacement: Displacement,
     pub direction: Direction,
-    pub orientation: Orientation,
+    pub orientation: Vec<Orientation>,
     pub pixel_size: usize,
 }
 
@@ -96,16 +96,15 @@ impl PreMapping {
             })
             .collect();
         // You can match more displasement type here
-        let chunk = Self::displacement_zig_zag(chunk);
-        let chunk = Self::orientation(chunk, opt.orientation);
         let mapping = (0..opt.univer_per_row * opt.univer_per_column)
             .map(|univer| {
-                let mut new_chunk = chunk.clone();
-                new_chunk
+                let chunk = Self::displacement_zig_zag(chunk.clone());
+                let mut chunk = Self::orientation(chunk, opt.orientation[univer]);
+                chunk
                     .iter_mut()
                     .flatten()
                     .for_each(|pixel| pixel.univer = univer);
-                new_chunk
+                chunk
             })
             .collect();
         Self(mapping, opt)

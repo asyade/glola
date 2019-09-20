@@ -7,5 +7,10 @@
     "color_mode": "RGBA",
     "displacement": "Snake",
     "direction": "Horizontal",
-    "orientation": "TopLeft"
+    "orientation": [
+        "BottomRight",
+        "BottomRight",
+        "TopLeft",
+        "TopLeft"
+    ]
 }

@@ -52,5 +52,5 @@ pub struct MappingOpt {
     pub color_mode: ColorMode,
     pub displacement: Displacement,
     pub direction: Direction,
-    pub orientation: Orientation,
+    pub orientation: Vec<Orientation>,
 }
