@@ -27,6 +27,12 @@ use std::path::Path;
 use std::time::Duration;
 
 pub fn main() -> std::io::Result<()> {
+    let socket = UdpSocket::bind(("0.0.0.0", 6454)).unwrap();
+    let broadcast_addr = ("10.0.0.18", 6454)
+        .to_socket_addrs()
+        .unwrap()
+        .next()
+        .unwrap();
     socket.set_broadcast(true).unwrap();
     let buff = ArtCommand::Poll(Poll::default()).into_buffer().unwrap();
     socket.send_to(&buff, &broadcast_addr).unwrap();
@@ -45,11 +51,11 @@ pub fn main() -> std::io::Result<()> {
             ArtCommand::PollReply(reply) => {
                 for x in (0..100).cycle() {
                     // This is an ArtNet node on the network. We can send commands to it like this:
-                    for i in 0..=3 {
+                    for i in 0..3 {
                         let mut command = ArtCommand::Output(Output {
                             length: 512,        // must match your data.len()
                             data: vec![x; 512], // The data we're sending to the node
-                            physical: i,
+                            physical: ,
                             subnet: i as u16,
                             ..Output::default()
                         });

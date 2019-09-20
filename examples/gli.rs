@@ -284,25 +284,26 @@ fn gif_loop(gif: &str, opt: MappingOpt, hexd: bool, mul: usize, window: bool) {
         // frame.1[11 * 4] = 255;
         let instant = std::time::Instant::now();
         let frame_duration = std::time::Instant::now();
-        // We're sending 60 fps even if the gif do not have this frame rate to ensure the matrix can handle it
-        while frame_duration.elapsed() < frame.0 {
-            let instant = std::time::Instant::now();
-            let _ = dbg.as_mut().map(|e| e.poll_event());
-            let (fps, packet) = screen.apply(&frame.1);
-            println!("fps: {}", fps);
-            for (i, mut u) in packet.iter().enumerate() {
-                let mut data = u.data.to_vec();
-                // data.iter_mut().for_each(|e| *e = 0);
-                // data[i] = 255;
-                connector.send(&reply, i as u8, 512, data).unwrap();
-                if hexd {
-                    println!("{}", u)
-                }
+        // @Kantum We're sending 60 fps even if the gif do not have this frame rate to ensure the matrix can handle it
+        // while frame_duration.elapsed() < frame.0 {
+        // @Kantum this loop ensure that the gif fps is respected, (ex gif at 10fps must show each frame 6 time)
+        let instant = std::time::Instant::now();
+        let _ = dbg.as_mut().map(|e| e.poll_event());
+        let (fps, packet) = screen.apply(&frame.1);
+        println!("fps: {}", fps);
+        for (i, mut u) in packet.iter().enumerate() {
+            let mut data = u.data.to_vec();
+            // @Kantum `i` is the univer id, u is the coresponding ArtDmx packet
+            connector.send(&reply, i as u8, 512, data).unwrap();
+            if hexd {
+                println!("{}", u)
             }
-            let _ = dbg.as_mut().map(|e| e.dump(packet));
-            regulate_fps!(instant.elapsed().as_millis() as f64, FRAME_DELLAY);
         }
+        let _ = dbg.as_mut().map(|e| e.dump(packet));
+        // @Kantum fps are regulated here, you can change global var FRAME_DELLAY/FPS to modify fps
+        // regulate_fps!(instant.elapsed().as_millis() as f64, FRAME_DELLAY);
     }
+    // }
 }
 
 fn dump(opt: MappingOpt) {
