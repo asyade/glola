@@ -47,7 +47,7 @@ impl From<artnet_protocol::Error> for GliError {
     }
 }
 
-const FPS: f64 = 60.0;
+const FPS: f64 = 1.0;
 const FRAME_DELLAY: f64 = 1000.0 / FPS;
 const BW: usize = 1;
 
@@ -88,8 +88,18 @@ impl ArnetConnector {
         let poll = ArtCommand::Poll(Poll::default()).into_buffer().unwrap();
         self.socket.send_to(&poll, &self.broadcast_addr).unwrap();
         let mut buffer = [0u8; 1024];
-        let (length, addr) = self.socket.recv_from(&mut buffer).unwrap(); //TODO put a timeout
-        Ok(addr) //TODO here we should match packet type to ensure that is a pollReady but skiped here we just need socketaddress
+        println!("Waiting for drivers ....");
+        let mut cptr = 0;
+        let mut addr = None;
+        while cptr < 2 {
+            let (length, ad) = self.socket.recv_from(&mut buffer).unwrap(); //TODO put a timeout
+            addr = Some(ad);
+            cptr += 1;
+            println!("Client response: len {}  addr {:?}", length, addr);
+        }
+       let res = Ok(addr.unwrap());
+        res
+        // Ok(addr) //TODO here we should match packet type to ensure that is a pollReady but skiped here we just need socketaddress
     }
 
     pub fn send(&mut self, addr: &SocketAddr, univer: u8, len: usize, dmx: Vec<u8>) -> Result<()> {
@@ -209,7 +219,6 @@ impl GifLoader {
         let mut idx = 3;
         while idx < std::cmp::min(old.len(), new.len()) {
             if new[idx] == 0 && old[idx] != 0 {
-                dbg!("Merge");
                 new[idx] = old[idx];
             }
             idx += 4;
@@ -224,12 +233,37 @@ impl GifLoader {
             .map_err(|_| io::Error::last_os_error())?;
         let mut sized_frames = vec![];
         let mut last: Option<Vec<u8>> = None;
+        let mut first = None;
         while let Some(mut frame) = decoder
             .read_next_frame()
             .map_err(|_| io::Error::last_os_error())?
         {
+            if first.is_none() {
+                first = Some(frame.clone());
+            }
             let mut new_frame = vec![0; opt.width * opt.height * opt.pixel_size];
-            let mut curr = frame.buffer.to_vec();
+            
+            let mut curr = {
+                dbg!(frame.left, frame.top, frame.width, frame.height);
+
+                let first = first.as_ref().unwrap();
+                let data = frame.buffer.to_vec();
+                let mut full_fill = vec![0u8; first.buffer.len()];
+                let psize = 4;
+                for x in 0 as usize..frame.width as usize {
+                   for y in 0 as usize..frame.height as usize {
+                        let px = (x + (y * frame.width as usize)) * psize;
+                        let full_idx = (x + frame.left as usize) + ((y + frame.top as usize) * frame.width as usize); 
+                        let idx_full = full_idx * psize;
+                        full_fill[idx_full..idx_full + psize].copy_from_slice(&data[px..px + psize]);
+                        // full_fill[idx_full] = data[px];
+                        // full_fill[(idx_full + 1] = data[px + 1];
+                        // full_fill[(idx_full + 2] = data[px + 2];
+                   }
+                }
+                full_fill
+                // data
+            };
             if let Some(last) = last {
                 Self::merge_alpha(&last, &mut curr);
             }
@@ -269,6 +303,8 @@ fn gif_loop(gif: &str, opt: MappingOpt, hexd: bool, mul: usize, window: bool) {
     } else {
         None
     };
+    let (ins, first) = gif.frames[0].clone();
+    let data = first.to_vec();
     let mut cycle = gif.frames.iter().cycle();
     let broadcast_addr = ("10.0.0.18", 6454)
         .to_socket_addrs()
@@ -278,20 +314,20 @@ fn gif_loop(gif: &str, opt: MappingOpt, hexd: bool, mul: usize, window: bool) {
     let mut connector = ArnetConnector::new("0.0.0.0", 6454, broadcast_addr).unwrap();
     let reply = connector.broadcast().unwrap();
     for (i, mut frame) in cycle.enumerate() {
+        println!("ITER");
         // let mut frame = frame.clone();
         // frame.1.iter_mut().for_each(|e| *e = 0);
         // frame.1[i] = 255;
         // frame.1[11 * 4] = 255;
-        let instant = std::time::Instant::now();
-        let frame_duration = std::time::Instant::now();
         // @Kantum We're sending 60 fps even if the gif do not have this frame rate to ensure the matrix can handle it
         // while frame_duration.elapsed() < frame.0 {
         // @Kantum this loop ensure that the gif fps is respected, (ex gif at 10fps must show each frame 6 time)
         let instant = std::time::Instant::now();
         let _ = dbg.as_mut().map(|e| e.poll_event());
         let (fps, packet) = screen.apply(&frame.1);
-        println!("fps: {}", fps);
-        for (i, mut u) in packet.iter().enumerate() {
+        dbg!(fps);
+        let hot_fix = vec![&packet[0], &packet[1], &packet[4], &packet[5], &packet[2], &packet[3], &packet[6], &packet[7]];
+        for (i, mut u) in hot_fix.into_iter().enumerate() {
             let mut data = u.data.to_vec();
             // @Kantum `i` is the univer id, u is the coresponding ArtDmx packet
             connector.send(&reply, i as u8, 512, data).unwrap();
@@ -300,6 +336,8 @@ fn gif_loop(gif: &str, opt: MappingOpt, hexd: bool, mul: usize, window: bool) {
             }
         }
         let _ = dbg.as_mut().map(|e| e.dump(packet));
+        
+        std::thread::sleep(frame.0);
         // @Kantum fps are regulated here, you can change global var FRAME_DELLAY/FPS to modify fps
         // regulate_fps!(instant.elapsed().as_millis() as f64, FRAME_DELLAY);
     }
@@ -349,6 +387,7 @@ fn main() {
                         .short("g")
                         .help("GIF file to parse.")
                         .takes_value(true)
+                        .multiple(true)
                         .required(true),
                 )
                 .arg(

@@ -60,9 +60,9 @@ impl Encoder for ArtnetEncoder {
                 self.univers[univer].data[address..address + self.opt.pixel_size]
                     .copy_from_slice(&buffer[buffer_offset..buffer_offset + self.opt.pixel_size]);
                 // @Kantum modulate led brightness here (for test prupose)
-                self.univers[univer].data[address + 0] /= 3;
-                self.univers[univer].data[address + 1] /= 3;
-                self.univers[univer].data[address + 2] /= 3;
+                self.univers[univer].data[address + 0];
+                self.univers[univer].data[address + 1];
+                self.univers[univer].data[address + 2];
                 self.univers[univer].data[address + 3] = 0;
             }
         }

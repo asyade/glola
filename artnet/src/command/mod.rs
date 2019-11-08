@@ -149,7 +149,6 @@ impl ArtCommand {
 
     /// Convert an a byte buffer to a command.
     pub fn from_buffer(buffer: &[u8]) -> Result<ArtCommand> {
-        dbg!("YE");
         if buffer.len() < 13 {
             return Err(Error::MessageTooShort(buffer.to_vec()));
         }
@@ -159,9 +158,7 @@ impl ArtCommand {
 
         let opcode = LittleEndian::read_u16(&buffer[8..10]);
         let remaining = &buffer[10..];
-        dbg!("YO");
         let command = ArtCommand::opcode_to_enum(opcode, remaining)?;
-        dbg!("YA");
 
         Ok(command)
     }
@@ -172,7 +169,6 @@ impl ArtCommand {
                 Poll::from(data).map_err(|e| Error::OpcodeError("Poll", Box::new(e)))?,
             ),
             0x2100 => {
-                dbg!(&data, std::mem::size_of::<PollReply>());
                 ArtCommand::PollReply(Box::new(
                     PollReply::from(data)
                         .map_err(|e| Error::OpcodeError("PollReply", Box::new(e)))?,
